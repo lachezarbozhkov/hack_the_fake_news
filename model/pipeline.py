@@ -8,7 +8,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.svm.classes import SVC
 
 from model.features import CustomTfidfVectorizer, Word2VecAverageContentVector, CustomTfidfVectorizerTitle, \
-    Word2VecAverageTitleVector, Word2VecTitleContent, TypeTokenRatio
+    Word2VecAverageTitleVector, Word2VecTitleContent, TypeTokenRatio, StopWordsCount, StopWordsTitle
 
 df = pd.read_excel("../data/FN_Training_Set.xlsx")
 
@@ -22,10 +22,12 @@ pipe = Pipeline([
         ('w2v_vector_content', Word2VecAverageContentVector()),
         ('w2v_vector_title', Word2VecAverageTitleVector()),
         ('type_token', TypeTokenRatio()),
-        ('w2v_title_content', Word2VecTitleContent())
+        ('w2v_title_content', Word2VecTitleContent()),
+        ('sw', StopWordsCount()),
+        ('sw_title', StopWordsTitle())
     ])),
     ('scaler', MaxAbsScaler()),
-    ('clf', LinearSVC(random_state=42, C=1))
+    ('clf', LinearSVC(random_state=42))
 ])
 
 print("training...")

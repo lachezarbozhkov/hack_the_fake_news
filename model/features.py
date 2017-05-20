@@ -7,7 +7,7 @@ from scipy.spatial.distance import cosine
 import numpy as np
 
 W2V = Word2Vec.load("../data/embedings-bg/w2v_model")
-
+SW = open('../data/stopwords.txt').read().split("\n")
 
 class Feature(TransformerMixin):
     """Feature Interface."""
@@ -67,6 +67,17 @@ class CustomTfidfVectorizerTitle(Feature):
     def transform(self, df):
         res = self.tr.transform([row for row in df['Content Title']])
         return res
+
+
+class StopWordsCount(Feature):
+    def transform(self, df):
+        return np.array([len([w for w in sent.lower().split() if w in SW]) for sent in df['Content']])\
+            .reshape(len(df.index), 1)
+
+class StopWordsTitle(Feature):
+    def transform(self, df):
+        return np.array([len([w for w in sent.lower().split() if w in SW]) for sent in df['Content Title']])\
+            .reshape(len(df.index), 1)
 
 
 class CustomTfidfVectorizer(Feature):
