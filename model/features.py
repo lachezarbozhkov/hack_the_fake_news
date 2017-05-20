@@ -68,6 +68,12 @@ class CustomTfidfVectorizerTitle(Feature):
         res = self.tr.transform([row for row in df['Content Title']])
         return res
 
+class WMDDistance(Feature):
+    def transform(self, df):
+        out = []
+        for i, row in df.iterrows():
+            out.append(W2V.wmdistance(row['Content'].lower().split(), row['Content Title'].lower().split()))
+        return np.array(out).reshape(len(df.index), 1)
 
 class StopWordsCount(Feature):
     def transform(self, df):
