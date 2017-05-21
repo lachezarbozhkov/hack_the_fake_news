@@ -5,12 +5,11 @@ from sklearn.preprocessing.data import MaxAbsScaler, StandardScaler
 from sklearn.svm import LinearSVC
 from sklearn.pipeline import Pipeline, FeatureUnion
 from sklearn.model_selection import train_test_split, GridSearchCV
-from sklearn.svm.classes import SVC
+from sklearn.svm import SVC
 
-
-from model.features import CustomTfidfVectorizer, Word2VecAverageContentVector, CustomTfidfVectorizerTitle, \
+from features import CustomTfidfVectorizer, Word2VecAverageContentVector, CustomTfidfVectorizerTitle, \
     Word2VecAverageTitleVector, Word2VecTitleContent, TypeTokenRatio, StopWordsCount, StopWordsTitle, WMDDistance, \
-    PMI, CustomTfidfVectorizer_URL, LDAVectorContent
+    PMI, CustomTfidfVectorizer_URL, LDAVectorContent, CountingWords
 
 df = pd.read_excel("../data/FN_Training_Set.xlsx")
 
@@ -34,19 +33,20 @@ pipe = Pipeline([
         ('sw', StopWordsCount()),
         ('sw_title', StopWordsTitle()),
         ('pmi', PMI()),
-        ('lda', LDAVectorContent())
+        ('lda', LDAVectorContent()),
+        ('CountingWords', CountingWords())
         # ('wmd', WMDDistance())
     ])),
     ('scaler', MaxAbsScaler()),
-    ('clf', SVC())
+    ('clf', LinearSVC())
 ])
 
-grid_search = GridSearchCV(pipe, tuned_parameters, cv=5,
-                        scoring='accuracy', verbose=1, n_jobs=-1)
-grid_search.fit(train, train['click_bait_score'])
+# grid_search = GridSearchCV(pipe, tuned_parameters, cv=5,
+#                         scoring='accuracy', verbose=1, n_jobs=-1)
+# grid_search.fit(train, train['click_bait_score'])
 
 
-print(grid_search.best_params_)
+# print(grid_search.best_params_)
 
 
 print("training...")

@@ -1,12 +1,15 @@
 # -*- coding: utf-8 -*-
+import re
+import numpy as np
+from urllib import parse
+
 from sklearn.pipeline import TransformerMixin, BaseEstimator
+from sklearn.preprocessing import LabelBinarizer
 from sklearn.feature_extraction.text import TfidfVectorizer
 from gensim.models import Word2Vec, LdaModel
 from gensim.corpora import Dictionary
 from scipy.spatial.distance import cosine
-import re
 
-import numpy as np
 
 def load_pmi(name):
     res = dict()
@@ -115,7 +118,7 @@ class PMI(Feature):
                    max(pmi_content_NONbait), np.mean(pmi_content_NONbait),
                    max(pmi_content_fact), np.mean(pmi_content_fact),
                    max(pmi_content_NONfact), np.mean(pmi_content_NONfact)
-                   ]
+                  ]
 
             out.append(res)
         return out
@@ -137,10 +140,12 @@ class WMDDistance(Feature):
             out.append(W2V.wmdistance(row['Content'].lower().split(), row['Content Title'].lower().split()))
         return np.array(out).reshape(len(df.index), 1)
 
+
 class StopWordsCount(Feature):
     def transform(self, df):
         return np.array([len([w for w in sent.lower().split() if w in SW]) for sent in df['Content']])\
             .reshape(len(df.index), 1)
+
 
 class StopWordsTitle(Feature):
     def transform(self, df):
@@ -217,3 +222,51 @@ class CustomTfidfVectorizer_URL(Feature):
             data = [row for row in df['Content Url']]
             TFIDF_URL.fit(data)
         return TFIDF_URL.transform([row for row in df['Content Url']])
+
+
+class CountingWords(Feature):
+
+    def extract_urls(self, text):
+        """Return a list of urls from a text string. False positives exist."""
+        out = []
+        for word in text.split(' '):
+            thing = parse.urlparse(word.strip())
+            if thing.scheme:
+                out.append(word)
+        return out
+
+    def sim_title_content(self, title, content):
+        title_words = title.lower().split()
+        content_words = content.lower().split()
+        common_words = sum([word in content_words for word in title_words])
+        return common_words / len(title_words)
+
+    def transform(self, df):
+        df = df.copy()
+        df['Content'] = df['Content'].astype(str)
+        df['Content Title'] = df['Content Title'].astype(str)
+
+        df['len_words'] = df['Content'].apply(lambda t: len(t.split()))
+        df['len_words_title'] = df['Content Title'].apply(lambda t: len(t.split()))
+
+        df['len_chars'] = df['Content'].apply(len)
+        df['len_chars_title'] = df['Content Title'].apply(len)
+
+        df['len_symbols'] = df['Content'].apply(lambda t: sum([c in ['$.!;#?:-+@%^&*(),'] for c in t]))
+        df['len_symbols_title'] = df['Content Title'].apply(lambda t: sum([c in ['$.!;#?:-+@%^&*(),'] for c in t]))
+
+        df['len_capitals'] = df['Content'].apply(lambda t: sum([str.isupper(c) for c in t]))
+        df['len_capitals_title'] = df['Content Title'].apply(lambda t: sum([str.isupper(c) for c in t]))
+
+        df['fraction_capitals'] = (df['len_capitals'] + 1) / (df['len_chars'] + 1)
+        df['fraction_capitals_title'] = (df['len_capitals_title'] + 1) / (df['len_chars_title'] + 1)
+
+        df['len_url'] = df.Content.apply(lambda t: len(self.extract_urls(t)))
+        df['title_sim'] = df.apply(lambda row: self.sim_title_content(row['Content Title'], row['Content']), axis=1)
+
+        columns = ['len_words', 'len_words_title',
+                'len_chars', 'len_chars_title', 'len_symbols', 'len_symbols_title',
+                'len_capitals', 'len_capitals_title', 'fraction_capitals',
+                'fraction_capitals_title', 'len_url', 'title_sim']
+
+        return df[columns]
