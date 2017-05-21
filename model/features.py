@@ -176,10 +176,36 @@ class CustomTfidfVectorizer(Feature):
 class LDAVectorContent(Feature):
     def transform(self, df):
         res = np.zeros((len(df.index), 10))
-        for i, sent in enumerate(df['Content Title']):
-            sent_v = LDA.get_document_topics(FAKE_DICT.doc2bow(sent.lower().split(" ")), minimum_probability=-1)
+        for i, sent in enumerate(df['Content']):
+            sent_v = [t[1] for t in LDA.get_document_topics(FAKE_DICT.doc2bow(sent.lower().split(" ")), minimum_probability=-1)]
             # if not np.isnan(sent_v):
-            #     res[i] = sent_v
+            res[i] = np.array(sent_v).reshape(10)
+        return res
+
+
+class LDAVectorContentTitle(Feature):
+    def transform(self, df):
+        res = []
+        for i, sent in df.iterrows():
+            sent_t = [t[1] for t in
+                      LDA.get_document_topics(FAKE_DICT.doc2bow(sent['Content'].lower().split(" ")), minimum_probability=-1)]
+            sent_c = [t[1] for t in
+                      LDA.get_document_topics(FAKE_DICT.doc2bow(sent['Content Title'].lower().split(" ")), minimum_probability=-1)]
+
+            sim = cosine(sent_t, sent_c)
+
+            # if not np.isnan(sent_v):
+            res.append(sim)
+        return np.array(res).reshape(len(df.index), 1)
+
+class LDAVectorTitle(Feature):
+    def transform(self, df):
+        res = np.zeros((len(df.index), 10))
+        for i, sent in enumerate(df['Content Title']):
+            sent_v = [t[1] for t in
+                      LDA.get_document_topics(FAKE_DICT.doc2bow(sent.lower().split(" ")), minimum_probability=-1)]
+            # if not np.isnan(sent_v):
+            res[i] = np.array(sent_v).reshape(10)
         return res
 
 
