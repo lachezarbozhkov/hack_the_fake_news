@@ -24,9 +24,9 @@ train = train.dropna(subset=['Content', 'Content Title'])
 
 pipe = Pipeline([
     ('union', FeatureUnion([
-        ('tfidf', CustomTfidfVectorizer(train)),
-        ('tf-idf-url', CustomTfidfVectorizer_URL(train)),
-        ('tf-idf_title', CustomTfidfVectorizerTitle(train)),
+        ('tfidf', CustomTfidfVectorizer()),
+        ('tf-idf-url', CustomTfidfVectorizer_URL()),
+        ('tf-idf_title', CustomTfidfVectorizerTitle()),
         ('w2v_vector_content', Word2VecAverageContentVector()),
         ('w2v_vector_title', Word2VecAverageTitleVector()),
         ('type_token', TypeTokenRatio()),

@@ -17,7 +17,6 @@ def load_pmi(name):
     return res
 
 
-
 W2V = Word2Vec.load("../data/embedings-bg/w2v_model")
 SW = open('../data/stopwords.txt').read().split("\n")
 PMI_CONTENT_CLICKBAIT = load_pmi('pmi_content_clickbait')
@@ -25,6 +24,7 @@ PMI_CONTENT_FACT = load_pmi('pmi_content_fact')
 PMI_HEADERS_CLICKBAIT = load_pmi('pmi_headers_clickbait')
 PMI_HEADERS_FACT = load_pmi('pmi_headers_fact')
 REGEX_CLEAN = '[\n„\".,!?“:\-\/_\xa0\(\)…]'
+
 
 class Feature(BaseEstimator, TransformerMixin):
     """Feature Interface."""
@@ -128,16 +128,6 @@ class Word2VecAverageTitleVector(Feature):
         return res
 
 
-class CustomTfidfVectorizerTitle(Feature):
-    def __init__(self, df):
-        self.tr = TfidfVectorizer(max_features=500)
-        data = [row for row in df['Content Title']]
-        self.tr.fit_transform(data)
-
-    def transform(self, df):
-        res = self.tr.transform([row for row in df['Content Title']])
-        return res
-
 class WMDDistance(Feature):
     def transform(self, df):
         out = []
@@ -155,22 +145,37 @@ class StopWordsTitle(Feature):
         return np.array([len([w for w in sent.lower().split() if w in SW]) for sent in df['Content Title']])\
             .reshape(len(df.index), 1)
 
+TFIDF_CONTENT = None
+TFIDF_TITLE = None
+TFIDF_URL = None
+
+
+class CustomTfidfVectorizerTitle(Feature):
+    def transform(self, df):
+        global TFIDF_TITLE
+        if not TFIDF_TITLE:
+            TFIDF_TITLE = TfidfVectorizer(max_features=500)
+            data = [row for row in df['Content Title']]
+            TFIDF_TITLE.fit(data)
+        res = TFIDF_TITLE.transform([row for row in df['Content Title']])
+        return res
+
 
 class CustomTfidfVectorizer(Feature):
-    def __init__(self, df):
-        self.tr = TfidfVectorizer(max_features=500)
-        data = [row for row in df['Content']]
-        self.tr.fit_transform(data)
-
     def transform(self, df):
-        return self.tr.transform([row for row in df['Content']])
+        global TFIDF_CONTENT
+        if not TFIDF_CONTENT:
+            TFIDF_CONTENT = TfidfVectorizer(max_features=500)
+            data = [row for row in df['Content']]
+            TFIDF_CONTENT.fit(data)
+        return TFIDF_CONTENT.transform([row for row in df['Content']])
 
 
 class CustomTfidfVectorizer_URL(Feature):
-    def __init__(self, df):
-        self.tr = TfidfVectorizer(max_features=300)
-        data = [row for row in df['Content Url']]
-        self.tr.fit_transform(data)
-
     def transform(self, df):
-        return self.tr.transform([row for row in df['Content Url']])
+        global TFIDF_URL
+        if not TFIDF_URL:
+            TFIDF_URL = TfidfVectorizer(max_features=300)
+            data = [row for row in df['Content Url']]
+            TFIDF_URL.fit(data)
+        return TFIDF_URL.transform([row for row in df['Content Url']])
