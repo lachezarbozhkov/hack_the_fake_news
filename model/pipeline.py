@@ -10,7 +10,7 @@ from sklearn.svm.classes import SVC
 
 from model.features import CustomTfidfVectorizer, Word2VecAverageContentVector, CustomTfidfVectorizerTitle, \
     Word2VecAverageTitleVector, Word2VecTitleContent, TypeTokenRatio, StopWordsCount, StopWordsTitle, WMDDistance, \
-    PMI, CustomTfidfVectorizer_URL
+    PMI, CustomTfidfVectorizer_URL, LDAVectorContent
 
 df = pd.read_excel("../data/FN_Training_Set.xlsx")
 
@@ -33,7 +33,8 @@ pipe = Pipeline([
         ('w2v_title_content', Word2VecTitleContent()),
         ('sw', StopWordsCount()),
         ('sw_title', StopWordsTitle()),
-        ('pmi', PMI())
+        ('pmi', PMI()),
+        ('lda', LDAVectorContent())
         # ('wmd', WMDDistance())
     ])),
     ('scaler', MaxAbsScaler()),

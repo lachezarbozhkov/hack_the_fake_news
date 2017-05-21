@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 from sklearn.pipeline import TransformerMixin, BaseEstimator
 from sklearn.feature_extraction.text import TfidfVectorizer
-from gensim.models import Word2Vec
+from gensim.models import Word2Vec, LdaModel
+from gensim.corpora import Dictionary
 from scipy.spatial.distance import cosine
 import re
 
@@ -16,7 +17,8 @@ def load_pmi(name):
             res[split[0]] = np.asarray(split[1:], dtype='float')
     return res
 
-
+FAKE_DICT = Dictionary.load("../data/dict")
+LDA = LdaModel.load("../data/lda/lda_model")
 W2V = Word2Vec.load("../data/embedings-bg/w2v_model")
 SW = open('../data/stopwords.txt').read().split("\n")
 PMI_CONTENT_CLICKBAIT = load_pmi('pmi_content_clickbait')
@@ -169,6 +171,16 @@ class CustomTfidfVectorizer(Feature):
             data = [row for row in df['Content']]
             TFIDF_CONTENT.fit(data)
         return TFIDF_CONTENT.transform([row for row in df['Content']])
+
+
+class LDAVectorContent(Feature):
+    def transform(self, df):
+        res = np.zeros((len(df.index), 10))
+        for i, sent in enumerate(df['Content Title']):
+            sent_v = LDA.get_document_topics(FAKE_DICT.doc2bow(sent.lower().split(" ")), minimum_probability=-1)
+            # if not np.isnan(sent_v):
+            #     res[i] = sent_v
+        return res
 
 
 class CustomTfidfVectorizer_URL(Feature):
