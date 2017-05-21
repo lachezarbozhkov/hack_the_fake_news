@@ -166,3 +166,11 @@ class CustomTfidfVectorizer(Feature):
         return self.tr.transform([row for row in df['Content']])
 
 
+class CustomTfidfVectorizer_URL(Feature):
+    def __init__(self, df):
+        self.tr = TfidfVectorizer(max_features=300)
+        data = [row for row in df['Content Url']]
+        self.tr.fit_transform(data)
+
+    def transform(self, df):
+        return self.tr.transform([row for row in df['Content Url']])

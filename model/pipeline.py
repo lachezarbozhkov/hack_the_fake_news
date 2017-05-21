@@ -8,7 +8,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.svm.classes import SVC
 
 from model.features import CustomTfidfVectorizer, Word2VecAverageContentVector, CustomTfidfVectorizerTitle, \
-    Word2VecAverageTitleVector, Word2VecTitleContent, TypeTokenRatio, StopWordsCount, StopWordsTitle, WMDDistance, PMI
+    Word2VecAverageTitleVector, Word2VecTitleContent, TypeTokenRatio, StopWordsCount, StopWordsTitle, WMDDistance, \
+    PMI, CustomTfidfVectorizer_URL
 
 df = pd.read_excel("../data/FN_Training_Set.xlsx")
 
@@ -18,6 +19,7 @@ train = train.dropna(subset=['Content', 'Content Title'])
 pipe = Pipeline([
     ('union', FeatureUnion([
         ('tfidf', CustomTfidfVectorizer(train)),
+        ('tf-idf-url', CustomTfidfVectorizer_URL(train)),
         ('tf-idf_title', CustomTfidfVectorizerTitle(train)),
         ('w2v_vector_content', Word2VecAverageContentVector()),
         ('w2v_vector_title', Word2VecAverageTitleVector()),
