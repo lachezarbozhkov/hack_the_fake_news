@@ -3,11 +3,28 @@ from sklearn.pipeline import TransformerMixin
 from sklearn.feature_extraction.text import TfidfVectorizer
 from gensim.models import Word2Vec
 from scipy.spatial.distance import cosine
+import re
 
 import numpy as np
 
+def load_pmi(name):
+    res = dict()
+    with open('../data/' + name, 'r') as pfile:
+        r = pfile.read().split('\n')
+        for line in r:
+            split = line.split('\t')
+            res[split[0]] = np.asarray(split[1:], dtype='float')
+    return res
+
+
+
 W2V = Word2Vec.load("../data/embedings-bg/w2v_model")
 SW = open('../data/stopwords.txt').read().split("\n")
+PMI_CONTENT_CLICKBAIT = load_pmi('pmi_content_clickbait')
+PMI_CONTENT_FACT = load_pmi('pmi_content_fact')
+PMI_HEADERS_CLICKBAIT = load_pmi('pmi_headers_clickbait')
+PMI_HEADERS_FACT = load_pmi('pmi_headers_fact')
+REGEX_CLEAN = '[\n„\".,!?“:\-\/_\xa0\(\)…]'
 
 class Feature(TransformerMixin):
     """Feature Interface."""
@@ -47,6 +64,59 @@ class TypeTokenRatio(Feature):
             out.append([types_c/tokens_c, types_v/tokens_v])
         return np.array(out).reshape(len(df.index), 2)
 
+class PMI(Feature):
+    def transform(self, df):
+
+        out = []
+        for i, row in df.iterrows():
+            res = []
+            tokens_content = re.sub(REGEX_CLEAN, '', str(row['Content'])).lower().split(" ")
+            tokens_title = re.sub(REGEX_CLEAN, '', str(row['Content Title'])).lower().split(" ")
+
+            pmi_header_bait = []
+            pmi_header_NONbait = []
+            pmi_header_fact = []
+            pmi_header_NONfact = []
+            pmi_content_bait = []
+            pmi_content_NONbait = []
+            pmi_content_fact = []
+            pmi_content_NONfact = []
+
+            for token in tokens_title:
+                if token in PMI_HEADERS_CLICKBAIT and len(PMI_HEADERS_CLICKBAIT[token]) == 2:
+                    pmi_header_bait.append(PMI_HEADERS_CLICKBAIT[token][0])
+                    pmi_header_NONbait.append(PMI_HEADERS_CLICKBAIT[token][1])
+                if token in PMI_HEADERS_FACT and len(PMI_HEADERS_FACT[token]) == 2:
+                    pmi_header_fact.append(PMI_HEADERS_FACT[token][1])
+                    pmi_header_NONfact.append(PMI_HEADERS_FACT[token][0])
+
+            for token in tokens_content:
+                if token in PMI_CONTENT_CLICKBAIT and len(PMI_CONTENT_CLICKBAIT[token]) == 2:
+                    pmi_content_bait.append(PMI_CONTENT_CLICKBAIT[token][0])
+                    pmi_content_NONbait.append(PMI_CONTENT_CLICKBAIT[token][1])
+                if token in PMI_CONTENT_FACT and len(PMI_CONTENT_FACT[token]) == 2:
+                    pmi_content_fact.append(PMI_CONTENT_FACT[token][1])
+                    pmi_content_NONfact.append(PMI_CONTENT_FACT[token][0])
+
+            if len(pmi_header_NONfact) == 0:
+                pmi_header_NONfact.append(0)
+                pmi_header_fact.append(0)
+                pmi_header_bait.append(0)
+                pmi_header_NONbait.append(0)
+
+
+            res = [max(pmi_header_bait), np.mean(pmi_header_bait),
+                   max(pmi_header_NONbait), np.mean(pmi_header_NONbait),
+                   max(pmi_header_fact), np.mean(pmi_header_fact),
+                   max(pmi_header_NONfact), np.mean(pmi_header_NONfact),
+                   max(pmi_content_bait), np.mean(pmi_content_bait),
+                   max(pmi_content_NONbait), np.mean(pmi_content_NONbait),
+                   max(pmi_content_fact), np.mean(pmi_content_fact),
+                   max(pmi_content_NONfact), np.mean(pmi_content_NONfact)
+                   ]
+
+            out.append(res)
+        return out
 
 class Word2VecAverageTitleVector(Feature):
     def transform(self, df):

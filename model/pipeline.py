@@ -8,7 +8,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.svm.classes import SVC
 
 from model.features import CustomTfidfVectorizer, Word2VecAverageContentVector, CustomTfidfVectorizerTitle, \
-    Word2VecAverageTitleVector, Word2VecTitleContent, TypeTokenRatio, StopWordsCount, StopWordsTitle, WMDDistance
+    Word2VecAverageTitleVector, Word2VecTitleContent, TypeTokenRatio, StopWordsCount, StopWordsTitle, WMDDistance, PMI
 
 df = pd.read_excel("../data/FN_Training_Set.xlsx")
 
@@ -25,6 +25,7 @@ pipe = Pipeline([
         ('w2v_title_content', Word2VecTitleContent()),
         ('sw', StopWordsCount()),
         ('sw_title', StopWordsTitle()),
+        ('pmi', PMI())
         # ('wmd', WMDDistance())
     ])),
     ('scaler', MaxAbsScaler()),
@@ -32,8 +33,8 @@ pipe = Pipeline([
 ])
 
 print("training...")
-pipe.fit_transform(train, train['fake_news_score'])
+pipe.fit_transform(train, train['click_bait_score'])
 print("testing...")
-score = pipe.score(test, test['fake_news_score'])
+score = pipe.score(test, test['click_bait_score'])
 
 print(score)
