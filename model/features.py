@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from sklearn.pipeline import TransformerMixin
+from sklearn.pipeline import TransformerMixin, BaseEstimator
 from sklearn.feature_extraction.text import TfidfVectorizer
 from gensim.models import Word2Vec
 from scipy.spatial.distance import cosine
@@ -26,7 +26,7 @@ PMI_HEADERS_CLICKBAIT = load_pmi('pmi_headers_clickbait')
 PMI_HEADERS_FACT = load_pmi('pmi_headers_fact')
 REGEX_CLEAN = '[\n„\".,!?“:\-\/_\xa0\(\)…]'
 
-class Feature(TransformerMixin):
+class Feature(BaseEstimator, TransformerMixin):
     """Feature Interface."""
     def fit(self, X, y=None, **fit_params):
         return self
