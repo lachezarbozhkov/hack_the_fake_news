@@ -10,6 +10,9 @@ from gensim.models import Word2Vec, LdaModel
 from gensim.corpora import Dictionary
 from scipy.spatial.distance import cosine
 
+JARGON_DICT = open("../data/dicts/jargon.txt").read().split("\n")
+FOREIGN_DICT = open("../data/dicts/foreign_words.txt").read().split("\n")
+EN_DICT = open("../data/dicts/en_words_with_bg_equivalents.txt").read().split("\n")
 
 def load_pmi(name):
     res = dict()
@@ -223,6 +226,19 @@ class CustomTfidfVectorizer_URL(Feature):
             TFIDF_URL.fit(data)
         return TFIDF_URL.transform([row for row in df['Content Url']])
 
+
+class Dicts(Feature):
+    def transform(self, df):
+        results = np.zeros((len(df), 6))
+        for i, row in enumerate(df['Content']):
+            results[i][0] = sum([1 for word in row.lower().split(" ") if word in JARGON_DICT])
+            results[i][1] = sum([1 for word in row.lower().split(" ") if word in EN_DICT])
+            results[i][2] = sum([1 for word in row.lower().split(" ") if word in FOREIGN_DICT])
+        for i, row in enumerate(df['Content Title']):
+            results[i][3] = sum([1 for word in row.lower().split(" ") if word in JARGON_DICT])
+            results[i][4] = sum([1 for word in row.lower().split(" ") if word in EN_DICT])
+            results[i][5] = sum([1 for word in row.lower().split(" ") if word in FOREIGN_DICT])
+        return results
 
 class CountingWords(Feature):
 
