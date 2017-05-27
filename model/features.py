@@ -44,7 +44,7 @@ PMI_CONTENT_FACT = load_pmi('pmi_content_fact')
 PMI_HEADERS_CLICKBAIT = load_pmi('pmi_headers_clickbait')
 PMI_HEADERS_FACT = load_pmi('pmi_headers_fact')
 REGEX_CLEAN = '[\n„\".,!?“:\-\/_\xa0\(\)…]'
-
+TYPOS = [word.strip() for word in open("../data/dicts/typos.txt").read().split("\n")]
 
 class Feature(BaseEstimator, TransformerMixin):
     """Feature Interface."""
@@ -58,6 +58,16 @@ class Word2VecAverageContentVector(Feature):
         for i, sent in enumerate(df['Content']):
             res[i] = np.average([W2V[word] for word in sent.lower().split(" ") if word in W2V])
         return res
+
+
+class TyposCount(Feature):
+    @staticmethod
+    def count_typos(text):
+        return len([word for word in text.lower().split(" ") if word in TYPOS])
+
+    def transform(self, df):
+        return df.Content.apply(lambda sent: self.count_typos(sent)).values.reshape(len(df), 1)
+
 
 
 class FastTextSupervised(Feature):
