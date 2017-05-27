@@ -9,6 +9,19 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from gensim.models import Word2Vec, LdaModel
 from gensim.corpora import Dictionary
 from scipy.spatial.distance import cosine
+import fasttext
+import nltk.data
+
+JARGON_DICT = open("../data/dicts/jargon.txt").read().split("\n")
+FOREIGN_DICT = open("../data/dicts/foreign_words.txt").read().split("\n")
+EN_DICT = open("../data/dicts/en_words_with_bg_equivalents.txt").read().split("\n")
+
+SENT_SPLITTER = nltk.data.load('tokenizers/punkt/english.pickle')
+PERSONAL_PRONOUNS = ['аз', 'ти', 'той', 'тя', 'то', 'ние', 'вие', 'те', 'мен', 'мене', 'тебе', 'теб', 'него',
+                     'нея', 'нас', 'вас', 'тях', 'ме', 'те', 'го', 'я', 'ни', 'ви', 'ги', 'нему', 'ней', 'нам',
+                     'вам', 'тям', 'ми', 'му', 'ѝ', 'им']
+VOWELS = 'аъоуеияю'
+
 
 
 def load_pmi(name):
@@ -23,6 +36,8 @@ def load_pmi(name):
 FAKE_DICT = Dictionary.load("../data/dict")
 LDA = LdaModel.load("../data/lda/lda_model")
 W2V = Word2Vec.load("../data/embedings-bg/w2v_model")
+FASTTEXT_MODEL = None # fasttext.load_model('../data/fasttext/modelfst.bin')
+FASTTEXT_SUP = None #fasttext.load_model("../data/fasttext/supervised_model.bin")
 SW = open('../data/stopwords.txt').read().split("\n")
 PMI_CONTENT_CLICKBAIT = load_pmi('pmi_content_clickbait')
 PMI_CONTENT_FACT = load_pmi('pmi_content_fact')
@@ -42,6 +57,42 @@ class Word2VecAverageContentVector(Feature):
         res = np.zeros((len(df.index), 300))
         for i, sent in enumerate(df['Content']):
             res[i] = np.average([W2V[word] for word in sent.lower().split(" ") if word in W2V])
+        return res
+
+
+class FastTextSupervised(Feature):
+    def __init__(self):
+        global FASTTEXT_SUP
+        if not FASTTEXT_SUP:
+            FASTTEXT_SUP = fasttext.load_model("../data/fasttext/supervised_model.bin")
+
+    def transform(self, df):
+        res = []
+        for sent in df['Content']:
+            pred_prob = FASTTEXT_SUP.predict_proba(sent)[0][0]
+            # print(pred_prob[0][0])
+            if pred_prob[0] == '__label__1':
+                res.append(1)
+            else:
+                res.append(3)
+            # if pred_prob[0] == '__label__1':
+            #     res.append(1-pred_prob[1])
+            # else:
+            #     res.append(pred_prob[1])
+        # print(res)
+        return np.array(res).reshape((len(df), 1))
+
+
+class FastTextAverageContentVector(Feature):
+    def __init__(self):
+        global FASTTEXT_MODEL
+        if not FASTTEXT_MODEL:
+            FASTTEXT_MODEL = fasttext.load_model('../data/fasttext/modelfst.bin')
+
+    def transform(self, df):
+        res = np.zeros((len(df.index), 300))
+        for i, sent in enumerate(df['Content']):
+            res[i] = np.average([FASTTEXT_MODEL[word] for word in sent.lower().split(" ") if word in FASTTEXT_MODEL])
         return res
 
 
@@ -68,6 +119,7 @@ class TypeTokenRatio(Feature):
             types_v = len(set(row['Content Title'].lower().split(" ")))
             out.append([types_c/tokens_c, types_v/tokens_v])
         return np.array(out).reshape(len(df.index), 2)
+
 
 class PMI(Feature):
     def transform(self, df):
@@ -224,6 +276,19 @@ class CustomTfidfVectorizer_URL(Feature):
         return TFIDF_URL.transform([row for row in df['Content Url']])
 
 
+class Dicts(Feature):
+    def transform(self, df):
+        results = np.zeros((len(df), 6))
+        for i, row in enumerate(df['Content']):
+            results[i][0] = sum([1 for word in row.lower().split(" ") if word in JARGON_DICT])
+            results[i][1] = sum([1 for word in row.lower().split(" ") if word in EN_DICT])
+            results[i][2] = sum([1 for word in row.lower().split(" ") if word in FOREIGN_DICT])
+        for i, row in enumerate(df['Content Title']):
+            results[i][3] = sum([1 for word in row.lower().split(" ") if word in JARGON_DICT])
+            results[i][4] = sum([1 for word in row.lower().split(" ") if word in EN_DICT])
+            results[i][5] = sum([1 for word in row.lower().split(" ") if word in FOREIGN_DICT])
+        return results
+
 class CountingWords(Feature):
 
     def extract_urls(self, text):
@@ -270,3 +335,53 @@ class CountingWords(Feature):
                 'fraction_capitals_title', 'len_url', 'title_sim']
 
         return df[columns]
+
+
+def num_syllables(word):
+    return sum([word.count(vowel) for vowel in VOWELS])
+
+
+def num_pronouns(split_sentences):
+    return sum([sent.count(pronoun) for sent in split_sentences for pronoun in PERSONAL_PRONOUNS])
+
+
+class ReadabilityFeatures(Feature):
+    """
+    1.    Average sentence length (ASL)
+    2.    Number of different hard words
+    3.    Number of personal pronouns (PP)
+    4.    Percentage of unique words (TYPES)
+    5.    Number of prepositional phrases
+    6.    Average word length (syllables) (ASW)
+    7.    Flesch–Kincaid readability tests : 206.835 − (1.015 × ASL) − (84.6 × ASW)
+    8.    (Gunning Fog Index)
+          Grade level= 0.4 * ( (average sentence length) + (percentage of Hard Words) )
+          Where: Hard Words = words with more than two syllables.
+    9.    SMOG grading = 3 + √polysyllable count.
+          Where polysyllable count = number of words of more than two syllables in a sample of 30 sentences
+    10.   Forecast : Grade level = 20 − (N / 10)
+          Where N = number of single-syllable words in a 150-word sample.
+
+    Reference: https://en.wikipedia.org/wiki/Readability
+
+    """
+
+    def transform(self, df):
+        result = []
+        for i, row in df.iterrows():
+            sentences = SENT_SPLITTER.tokenize(row['Content'])
+            words_in_sents = [sent.lower().split(" ") for sent in sentences]
+            words = [word for sent in words_in_sents for word in sent]
+            asl = np.average([len(sent) for sent in words_in_sents])
+            asw = np.average([num_syllables(word) for word in words])
+            pp = num_pronouns(words_in_sents)
+            types = len(set(words))
+            fkr = 206.835 - (1.015 * asl) - (84.6 * asw)
+            polly = len([word for sent in words_in_sents[:30] for word in sent if num_syllables(word) > 2])
+            smog = polly ** (-3) + 3
+            N = len([word for word in words[:150] if num_syllables(word) == 1])
+            forecast = 20 - (N / 10)
+
+            result.append([asl, asw, pp, types, fkr, smog, forecast])
+
+        return np.array(result).reshape((len(result), len(result[0])))

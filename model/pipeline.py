@@ -9,7 +9,9 @@ from sklearn.svm import SVC
 
 from features import CustomTfidfVectorizer, Word2VecAverageContentVector, CustomTfidfVectorizerTitle, \
     Word2VecAverageTitleVector, Word2VecTitleContent, TypeTokenRatio, StopWordsCount, StopWordsTitle, WMDDistance, \
-    PMI, CustomTfidfVectorizer_URL, LDAVectorContent, CountingWords
+    PMI, CustomTfidfVectorizer_URL, LDAVectorContent, CountingWords, FastTextSupervised, ReadabilityFeatures, Dicts, \
+    FastTextAverageContentVector
+
 
 df = pd.read_excel("../data/FN_Training_Set.xlsx")
 
@@ -24,7 +26,7 @@ train = train.dropna(subset=['Content', 'Content Title'])
 pipe = Pipeline([
     ('union', FeatureUnion([
         ('tfidf', CustomTfidfVectorizer()),
-        ('tf-idf-url', CustomTfidfVectorizer_URL()),
+        # ('tf-idf-url', CustomTfidfVectorizer_URL()),
         ('tf-idf_title', CustomTfidfVectorizerTitle()),
         ('w2v_vector_content', Word2VecAverageContentVector()),
         ('w2v_vector_title', Word2VecAverageTitleVector()),
@@ -34,8 +36,12 @@ pipe = Pipeline([
         ('sw_title', StopWordsTitle()),
         ('pmi', PMI()),
         ('lda', LDAVectorContent()),
-        ('CountingWords', CountingWords())
-        # ('wmd', WMDDistance())
+        ('CountingWords', CountingWords()),
+        ('readability', ReadabilityFeatures()),
+        # ('fastext_sup', FastTextSupervised()),
+        # ('fast_text', FastTextAverageContentVector()),
+        # ('dicts', Dicts()),
+        # ('wmd', WMDDistance()),
     ])),
     ('scaler', MaxAbsScaler()),
     ('clf', LinearSVC())
