@@ -11,6 +11,7 @@ from gensim.corpora import Dictionary
 from scipy.spatial.distance import cosine
 import fasttext
 import nltk.data
+import re
 
 JARGON_DICT = open("../data/dicts/jargon.txt").read().split("\n")
 FOREIGN_DICT = open("../data/dicts/foreign_words.txt").read().split("\n")
@@ -68,6 +69,12 @@ class TyposCount(Feature):
     def transform(self, df):
         return df.Content.apply(lambda sent: self.count_typos(sent)).values.reshape(len(df), 1)
 
+
+class EnglishInTitle(Feature):
+    def transform(self, df):
+        return df['Content Title'].apply(lambda title:
+                                         int(re.match(pattern='[a-zA-Z]+', string=title) != None))\
+            .values.reshape(len(df), 1)
 
 
 class FastTextSupervised(Feature):

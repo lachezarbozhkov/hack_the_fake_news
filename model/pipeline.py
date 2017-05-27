@@ -10,7 +10,7 @@ from sklearn.svm import SVC
 from features import CustomTfidfVectorizer, Word2VecAverageContentVector, CustomTfidfVectorizerTitle, \
     Word2VecAverageTitleVector, Word2VecTitleContent, TypeTokenRatio, StopWordsCount, StopWordsTitle, WMDDistance, \
     PMI, CustomTfidfVectorizer_URL, LDAVectorContent, CountingWords, FastTextSupervised, ReadabilityFeatures, Dicts, \
-    FastTextAverageContentVector, TyposCount
+    FastTextAverageContentVector, TyposCount, EnglishInTitle
 
 
 df = pd.read_excel("../data/FN_Training_Set.xlsx")
@@ -39,6 +39,7 @@ pipe = Pipeline([
         ('CountingWords', CountingWords()),
         # ('readability', ReadabilityFeatures()),
         ('typos', TyposCount()),
+        ('english', EnglishInTitle()),
         # ('fastext_sup', FastTextSupervised()),
         # ('fast_text', FastTextAverageContentVector()),
         # ('dicts', Dicts()),
