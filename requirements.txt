@@ -4,3 +4,5 @@ scipy
 sklearn
 gensim
 xlrd
+nltk
+fasttext
