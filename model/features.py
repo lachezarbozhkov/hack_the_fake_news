@@ -12,6 +12,8 @@ from scipy.spatial.distance import cosine
 import fasttext
 import nltk.data
 import re
+from polyglot.text import Text, Word
+from collections import Counter
 
 JARGON_DICT = open("../data/dicts/jargon.txt").read().split("\n")
 FOREIGN_DICT = open("../data/dicts/foreign_words.txt").read().split("\n")
@@ -147,16 +149,51 @@ class TypeTokenRatio(Feature):
         return np.array(out).reshape(len(df.index), 2)
 
 
+class POSFeatures(Feature):
+    def get_pos_tags(self, input_text):
+        pos_tags = []
+        text = Text(input_text, hint_language_code='bg')
+        pos_tags = text.pos_tags
+        pos_tags = [pt[1] for pt in pos_tags]
+        return pos_tags
+
+
+    def transform(self, df):
+        out = []
+        for i, row in df.iterrows():
+            content = str(row['Content'])
+            title = str(row['Content Title'])
+            title_pos = self.get_pos_tags(title)
+            content_pos = self.get_pos_tags(content)
+            c_title = Counter(title_pos)
+            c_content = Counter(content_pos)
+            title_len = len(title.split(' '))
+            content_len = len(content.split(' '))
+            res = [
+                c_title["NOUN"] / title_len, c_title['VERB'] / title_len, c_title['ADJ'] / title_len,
+                c_title['PRON'] / title_len, c_title['PROPN'] / title_len, c_title['CONJ'] / title_len,
+                c_title['ADP'] / title_len, c_title['ADV'] / title_len, c_title['PART'] / title_len,
+                c_title['AUX'] / title_len,
+
+                c_content["NOUN"] / content_len, c_content['VERB'] / content_len, c_content['ADJ'] / content_len,
+                c_content['PRON'] / content_len, c_content['PROPN'] / content_len, c_content['CONJ'] / content_len,
+                c_content['ADP'] / content_len, c_content['ADV'] / content_len, c_content['PART'] / content_len,
+                c_content['AUX'] / content_len
+            ]
+            out.append(res)
+
+        return out
+
 class PMI(Feature):
     def transform(self, df):
 
         out = []
         for i, row in df.iterrows():
             res = []
-            title = re.sub(REGEX_CLEAN, '', str(row['Content'])).lower()
-            content = re.sub(REGEX_CLEAN, '', str(row['Content Title'])).lower()
-            tokens_content = title.split(" ")
-            tokens_title = content.split(" ")
+            content = re.sub(REGEX_CLEAN, '', str(row['Content'])).lower()
+            title = re.sub(REGEX_CLEAN, '', str(row['Content Title'])).lower()
+            tokens_content = content.split(" ")
+            tokens_title = title.split(" ")
 
             pmi_header_bait = []
             pmi_header_NONbait = []
@@ -285,6 +322,7 @@ class Word2VecAverageTitleVector(Feature):
             if not np.isnan(sent_v):
                 res[i] = sent_v
         return res
+
 
 
 class WMDDistance(Feature):
