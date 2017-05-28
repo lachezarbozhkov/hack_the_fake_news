@@ -44,6 +44,15 @@ PMI_CONTENT_CLICKBAIT = load_pmi('pmi_content_clickbait')
 PMI_CONTENT_FACT = load_pmi('pmi_content_fact')
 PMI_HEADERS_CLICKBAIT = load_pmi('pmi_headers_clickbait')
 PMI_HEADERS_FACT = load_pmi('pmi_headers_fact')
+PMI_CONTENT_CLICKBAIT_NE = load_pmi('pmi_content_clickbait_NE')
+PMI_CONTENT_FACT_NE = load_pmi('pmi_content_fact_NE')
+PMI_HEADERS_CLICKBAIT_NE = load_pmi('pmi_headers_clickbait_NE')
+PMI_HEADERS_FACT_NE = load_pmi('pmi_headers_fact_NE')
+PMI_CONTENT_CLICKBAIT_BI = load_pmi('pmi_content_clickbait_BI')
+PMI_CONTENT_FACT_BI = load_pmi('pmi_content_fact_BI')
+PMI_HEADERS_CLICKBAIT_BI = load_pmi('pmi_headers_clickbait_BI')
+PMI_HEADERS_FACT_BI = load_pmi('pmi_headers_fact_BI')
+
 REGEX_CLEAN = '[\n„\".,!?“:\-\/_\xa0\(\)…]'
 TYPOS = [word.strip() for word in open("../data/dicts/typos.txt").read().split("\n")]
 
@@ -144,8 +153,10 @@ class PMI(Feature):
         out = []
         for i, row in df.iterrows():
             res = []
-            tokens_content = re.sub(REGEX_CLEAN, '', str(row['Content'])).lower().split(" ")
-            tokens_title = re.sub(REGEX_CLEAN, '', str(row['Content Title'])).lower().split(" ")
+            title = re.sub(REGEX_CLEAN, '', str(row['Content'])).lower()
+            content = re.sub(REGEX_CLEAN, '', str(row['Content Title'])).lower()
+            tokens_content = title.split(" ")
+            tokens_title = content.split(" ")
 
             pmi_header_bait = []
             pmi_header_NONbait = []
@@ -155,6 +166,26 @@ class PMI(Feature):
             pmi_content_NONbait = []
             pmi_content_fact = []
             pmi_content_NONfact = []
+
+
+            pmi_header_bait_NE = [0]
+            pmi_header_NONbait_NE = [0]
+            pmi_header_fact_NE = [0]
+            pmi_header_NONfact_NE = [0]
+            pmi_content_bait_NE = [0]
+            pmi_content_NONbait_NE = [0]
+            pmi_content_fact_NE = [0]
+            pmi_content_NONfact_NE = [0]
+
+            pmi_header_bait_BI = [0]
+            pmi_header_NONbait_BI = [0]
+            pmi_header_fact_BI = [0]
+            pmi_header_NONfact_BI = [0]
+            pmi_content_bait_BI = [0]
+            pmi_content_NONbait_BI = [0]
+            pmi_content_fact_BI = [0]
+            pmi_content_NONfact_BI = [0]
+
 
             for token in tokens_title:
                 if token in PMI_HEADERS_CLICKBAIT and len(PMI_HEADERS_CLICKBAIT[token]) == 2:
@@ -178,15 +209,69 @@ class PMI(Feature):
                 pmi_header_bait.append(0)
                 pmi_header_NONbait.append(0)
 
+            for ne in PMI_HEADERS_CLICKBAIT_NE:
+                if ne in title and len(PMI_HEADERS_CLICKBAIT_NE[ne]) == 2:
+                    pmi_header_bait_NE.append(PMI_HEADERS_CLICKBAIT_NE[ne][0])
+                    pmi_header_NONbait_NE.append(PMI_HEADERS_CLICKBAIT_NE[ne][1])
+            for ne in PMI_HEADERS_FACT_NE:
+                if ne in title and len(PMI_HEADERS_FACT_NE[ne]) == 2:
+                    pmi_header_fact_NE.append(PMI_HEADERS_FACT_NE[ne][0])
+                    pmi_header_NONfact_NE.append(PMI_HEADERS_FACT_NE[ne][1])
+            for ne in PMI_CONTENT_CLICKBAIT_NE:
+                if ne in content and len(PMI_CONTENT_CLICKBAIT_NE[ne]) == 2:
+                    pmi_content_bait_NE.append(PMI_CONTENT_CLICKBAIT_NE[ne][0])
+                    pmi_content_NONbait_NE.append(PMI_CONTENT_CLICKBAIT_NE[ne][1])
+            for ne in PMI_CONTENT_FACT_NE:
+                if ne in content and len(PMI_CONTENT_FACT_NE[ne]) == 2:
+                    pmi_content_fact_NE.append(PMI_CONTENT_FACT_NE[ne][0])
+                    pmi_content_NONfact_NE.append(PMI_CONTENT_FACT_NE[ne][1])
 
-            res = [max(pmi_header_bait), np.mean(pmi_header_bait),
-                   max(pmi_header_NONbait), np.mean(pmi_header_NONbait),
-                   max(pmi_header_fact), np.mean(pmi_header_fact),
-                   max(pmi_header_NONfact), np.mean(pmi_header_NONfact),
-                   max(pmi_content_bait), np.mean(pmi_content_bait),
-                   max(pmi_content_NONbait), np.mean(pmi_content_NONbait),
-                   max(pmi_content_fact), np.mean(pmi_content_fact),
-                   max(pmi_content_NONfact), np.mean(pmi_content_NONfact)
+
+            for ne in PMI_HEADERS_CLICKBAIT_BI:
+                if ne in title and len(PMI_HEADERS_CLICKBAIT_BI[ne]) == 2:
+                    pmi_header_bait_BI.append(PMI_HEADERS_CLICKBAIT_BI[ne][0])
+                    pmi_header_NONbait_BI.append(PMI_HEADERS_CLICKBAIT_BI[ne][1])
+            for ne in PMI_HEADERS_FACT_BI:
+                if ne in title and len(PMI_HEADERS_FACT_BI[ne]) == 2:
+                    pmi_header_fact_BI.append(PMI_HEADERS_FACT_BI[ne][0])
+                    pmi_header_NONfact_BI.append(PMI_HEADERS_FACT_BI[ne][1])
+            for ne in PMI_CONTENT_CLICKBAIT_BI:
+                if ne in content and len(PMI_CONTENT_CLICKBAIT_BI[ne]) == 2:
+                    pmi_content_bait_BI.append(PMI_CONTENT_CLICKBAIT_BI[ne][0])
+                    pmi_content_NONbait_BI.append(PMI_CONTENT_CLICKBAIT_BI[ne][1])
+            for ne in PMI_CONTENT_FACT_BI:
+                if ne in content and len(PMI_CONTENT_FACT_BI[ne]) == 2:
+                    pmi_content_fact_BI.append(PMI_CONTENT_FACT_BI[ne][0])
+                    pmi_content_NONfact_BI.append(PMI_CONTENT_FACT_BI[ne][1])
+
+            #print(pmi_content_NONfact_BI)
+            res = [
+                    max(pmi_header_bait), np.mean(pmi_header_bait),
+                    max(pmi_header_NONbait), np.mean(pmi_header_NONbait),
+                    max(pmi_header_fact), np.mean(pmi_header_fact),
+                    max(pmi_header_NONfact), np.mean(pmi_header_NONfact),
+                    max(pmi_content_bait), np.mean(pmi_content_bait),
+                    max(pmi_content_NONbait), np.mean(pmi_content_NONbait),
+                    max(pmi_content_fact), np.mean(pmi_content_fact),
+                    max(pmi_content_NONfact), np.mean(pmi_content_NONfact),
+
+                    max(pmi_header_bait_NE), np.mean(pmi_header_bait_NE),
+                    max(pmi_header_NONbait_NE), np.mean(pmi_header_NONbait_NE),
+                    max(pmi_header_fact_NE), np.mean(pmi_header_fact_NE),
+                    max(pmi_header_NONfact_NE), np.mean(pmi_header_NONfact_NE),
+                    max(pmi_content_bait_NE), np.mean(pmi_content_bait_NE),
+                    max(pmi_content_NONbait_NE), np.mean(pmi_content_NONbait_NE),
+                    max(pmi_content_fact_NE), np.mean(pmi_content_fact_NE),
+                    max(pmi_content_NONfact_NE), np.mean(pmi_content_NONfact_NE),
+
+                    max(pmi_header_bait_BI), np.mean(pmi_header_bait_BI),
+                    max(pmi_header_NONbait_BI), np.mean(pmi_header_NONbait_BI),
+                    max(pmi_header_fact_BI), np.mean(pmi_header_fact_BI),
+                    max(pmi_header_NONfact_BI), np.mean(pmi_header_NONfact_BI),
+                    max(pmi_content_bait_BI), np.mean(pmi_content_bait_BI),
+                    max(pmi_content_NONbait_BI), np.mean(pmi_content_NONbait_BI),
+                    max(pmi_content_fact_BI), np.mean(pmi_content_fact_BI),
+                    max(pmi_content_NONfact_BI), np.mean(pmi_content_NONfact_BI)
                   ]
 
             out.append(res)

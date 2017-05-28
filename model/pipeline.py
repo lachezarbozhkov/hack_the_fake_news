@@ -46,7 +46,7 @@ pipe = Pipeline([
         # ('wmd', WMDDistance()),
     ])),
     ('scaler', MaxAbsScaler()),
-    ('clf', LinearSVC())
+    ('clf', LinearSVC(random_state=42))
 ])
 
 # grid_search = GridSearchCV(pipe, tuned_parameters, cv=5,
